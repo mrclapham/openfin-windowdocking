@@ -20,6 +20,8 @@ function initWithOpenFin(){
     dockingManager.register(fin.desktop.Window.getCurrent(), true);
     // Your OpenFin specific code to go here...
     createDockedWindow()
+    createDockedWindow()
+    createDockedWindow()
 }
 
 function initNoOpenFin(){
