@@ -487,11 +487,12 @@ var DockingManager = (function() {
 
         this.onWindowMove = this.onWindowMove.bind(this);
         this.onWindowClose = this.onWindowClose.bind(this);
-        this.onWindowRestore = this.onWindowRestore.bind(this);
-        this.onWindowMinimize = this.onWindowMinimize.bind(this);
+        //this.onWindowRestore = this.onWindowRestore.bind(this);
+        //this.onWindowMinimize = this.onWindowMinimize.bind(this);
         this.dockAllSnappedWindows = this.dockAllSnappedWindows.bind(this);
         this.onUndock = this.onUndock.bind(this);
         this.onVisibilityChanged = this.onVisibilityChanged.bind(this);
+
     };
 
     DockingManager.prototype.onUndock = function(message) {
@@ -516,61 +517,86 @@ var DockingManager = (function() {
     };
 
     DockingManager.prototype.register = function(window, dockableToOthers) {
+        console.log("+++++++++++++++++++++++++++++++++++++++++++++");
+        var _existingArrayInstances = windows.filter(function(d,i){
+            // console.log("Loop name : ",d.name)
+            return d.name === window.name
+        });
 
-        window = new DockableWindow(window);
-        window.dockableToOthers = (dockableToOthers === undefined || dockableToOthers !== false);
-
-        if (windows.indexOf(window) >= 0) {
-
+        if (_existingArrayInstances.length > 0) {
+            // the window is already in the windows array and we don't wat to push it again.
             return;
         }
 
-        windows.push(window);
+        //console.log("This is a dockable window ", (window instanceof DockableWindow));
+        if(!(window instanceof DockableWindow)){
+            console.log("2: DockableWindow decorator called ")
+            window = new DockableWindow(window);
+        }
+
+        window.dockableToOthers = (dockableToOthers === undefined || dockableToOthers !== false);
+        if (windows.indexOf(window) == -1){
+            windows.push(window);
+        }
+
+        console.log("REGISTERING --- ", fin.desktop.Window.getCurrent());
+
         window.onMove = this.onWindowMove;
         window.onMoveComplete = this.dockAllSnappedWindows;
         window.onClose = this.onWindowClose;
-        window.onRestore = this.onWindowRestore;
-        window.onMinimize = this.onWindowMinimize;
+
+        //window.onMinimize = this._onWindowMinimize;
+        var _onMinimizeCallback = function(){
+            this.openfinWindow.getGroup(function(e){
+                e.map(function(d,i){
+                    d.minimize();
+                });
+            },function(){
+                //--- on fail
+            });
+        };
+        var _onResoreCallback = function(){
+            this.openfinWindow.getGroup(function(e){
+                e.map(function(d,i){
+                    d.restore();
+                });
+            },function(){
+                //--- on fail
+            });
+        }
+
+        window.onMinimize = _onMinimizeCallback.bind(window);
+        window.onRestore = _onResoreCallback.bind(window);
     };
 
     DockingManager.prototype.unregister = function(window) {
-
-        if (!(window instanceof DockableWindow)) {
-            window = this._getWindowByOpenfinWindow(window);
-        }
-
-        var index = windows.indexOf(window);
-
-        if (index >= 0) {
-
-            windows.splice(index, 1);
-        }
+        var _this = this
+       windows.map(function(d,i){
+            if(d.name === window.name){
+                d.dockableToOthers = false;
+                windows.splice(i, 1);
+            }
+        });
     };
 
     DockingManager.prototype._getWindowByOpenfinWindow = function(opefinWindow) {
-
         for (var i = 0; i < windows.length; i++) {
-
             if (windows[i].opefinWindow == opefinWindow) return windows[i];
         }
-
         return null;
-    }
+    };
 
     DockingManager.prototype.onVisibilityChanged = function() {
 
         if (document.hidden) {
-
-            this.onWindowMinimize();
+            // this.onWindowMinimize();
         } else {
-
-            this.onWindowRestore();
+            // this.onWindowRestore();
         }
 
     };
 
     DockingManager.prototype.onWindowClose = function(event) {
-
         this.unregister(event.target);
     };
 
@@ -591,7 +617,7 @@ var DockingManager = (function() {
         }
     };
 
-    DockingManager.prototype.onWindowMinimize = function() {
+    DockingManager.prototype.minimizeAll = function() {
 
         if (minimized) {
             return;
@@ -604,6 +630,7 @@ var DockingManager = (function() {
         for (var i = 0; i < length; i++) {
 
             currentWindow = windows[i];
+            console.log("Current Window ", currentWindow)
             currentWindow.minimize();
         }
     };
@@ -612,7 +639,7 @@ var DockingManager = (function() {
 
         var currentWindow = event.target;
         event.bounds.currentRange = currentWindow.currentRange;
-
+        console.log("Moved ", currentWindow.dockableToOthers)
         if (currentWindow.group) return;
 
         var dWindow = null;
