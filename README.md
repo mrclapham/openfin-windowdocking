@@ -1,5 +1,6 @@
 # OpenFin snap and dock demo
-This is a vanilla JavaScript app seed for developing OpenFin apps. It is free from frameworks and build systems, though you may add them as you see fit.
+
+This repo contains a modified version of the OpenFin snap and dock code [https://github.com/openfin/snap-and-dock](https://github.com/openfin/snap-and-dock).
 
 It has a simple Node/Express server for local development.
 
